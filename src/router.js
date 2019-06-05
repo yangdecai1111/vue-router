@@ -1,23 +1,87 @@
 import Vue from 'vue'
 import Router from 'vue-router'
-import Home from './views/Home.vue'
+import NProgress from 'nprogress'
+import 'nprogress/nprogress.css'
+
+NProgress.configure({ showSpinner: false })
 
 Vue.use(Router)
 
-export default new Router({
+const router = new Router({
   routes: [
     {
       path: '/',
-      name: 'home',
-      component: Home
+      component: () => import('./views/Index/index.vue'),
+      children: [
+        {
+          path: 'home',
+          component: () => import('./views/Index/home.vue')
+        },
+        {
+          path: 'center',
+          component: () => import('./views/Index/center.vue')
+        },
+        {
+          path: 'about',
+          component: () => import('./views/Index/about.vue')
+        },
+        {
+          path: '',
+          redirect: '/home'
+        }
+      ]
     },
     {
-      path: '/about',
-      name: 'about',
-      // route level code-splitting
-      // this generates a separate chunk (about.[hash].js) for this route
-      // which is lazy-loaded when the route is visited.
-      component: () => import(/* webpackChunkName: "about" */ './views/About.vue')
+      path: '/Card',
+      component: () => import('./views/Card/index.vue'),
+      meta: {
+        requireLogin: true
+      }
+    },
+    {
+      path: '/Login',
+      component: () => import('./views/Login/index.vue')
+    },
+    {
+      path: '/Money',
+      component: () => import('./views/Money/index.vue'),
+      meta: {
+        requireLogin: true
+      }
+    },
+    {
+      name: 'Infomation',
+      path: '/Infomation/:id',
+      component: () => import(/* webpackChunkName: "Infomation" */'./views/Infomation/index.vue'),
+      beforeEnter: (to, from, next) => {
+        console.log('详情页独享')
+        next()
+      },
+      meta: {
+        requireLogin: true
+      }
     }
   ]
 })
+router.beforeEach((to, from, next) => {
+  NProgress.start()
+  if (to.meta.requireLogin) {
+    if (window.localStorage.getItem('userInfo')) {
+      next()
+    } else {
+      next({
+        path: '/Login',
+        query: {
+          redirect: to.fullPath
+        }
+      })
+    }
+  } else {
+    next()
+  }
+})
+
+router.afterEach((to, from) => {
+  NProgress.done()
+})
+export default router
